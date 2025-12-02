@@ -9,16 +9,17 @@ namespace Cine.Api
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            builder.Services.AddDbContext<DbContext>(options =>
-                options.UseNpgsql(builder.Configuration.GetConnectionString("DbContext.postgresql") ?? throw new InvalidOperationException("Connection string 'DbContext.postgresql' not found.")));
 
-            // Add services to the container.
+            // IMPORTANTE: Aquí deberías usar tu propia clase, ej: <CineContext>
+            // Si tu clase se llama realmente 'DbContext', asegúrate de que no sea la de Microsoft.
+            builder.Services.AddDbContext<DbContext>(options =>
+                options.UseNpgsql(builder.Configuration.GetConnectionString("DbContext.postgresql")
+                ?? throw new InvalidOperationException("Connection string 'DbContext.postgresql' not found.")));
 
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-            // Configure JSON options
+
             builder.Services
                 .AddControllers()
                 .AddNewtonsoftJson(
@@ -29,8 +30,30 @@ namespace Cine.Api
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
-            //if(app.Environment.IsDevelopment())
+            // ---------------------------------------------------------
+            // BLOQUE PARA APLICAR MIGRACIONES AUTOMÁTICAS EN RENDER
+            // ---------------------------------------------------------
+            using(var scope = app.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                try
+                {
+                    // Obtiene tu DbContext
+                    // NOTA: Cambia <DbContext> por el nombre real de tu clase heredada (ej. <CineContext>)
+                    var context = services.GetRequiredService<DbContext>();
+
+                    // Aplica cualquier migración pendiente automáticamente
+                    context.Database.Migrate();
+                }
+                catch(Exception ex)
+                {
+                    var logger = services.GetRequiredService<ILogger<Program>>();
+                    logger.LogError(ex, "Ocurrió un error al migrar la base de datos.");
+                }
+            }
+            // ---------------------------------------------------------
+
+            //if(app.Environment.IsDevelopment()) // Comentado para ver Swagger en Render si lo deseas
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
@@ -39,7 +62,6 @@ namespace Cine.Api
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
-
 
             app.MapControllers();
 
