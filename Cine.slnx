@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Cine.Api/Cine.Api.csproj" />
+  <Project Path="Cine.ApiTest/Cine.ApiTest.csproj" />
+  <Project Path="Cine.Modelos/Cine.Modelos.csproj" />
+</Solution>
