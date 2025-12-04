@@ -23,33 +23,46 @@ namespace Cine.Api.Controllers
 
         // GET: api/Salas
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Sala>>> GetSala()
+        public async Task<ActionResult<ApiResult<List<Sala>>>> GetSala()
         {
-            return await _context.Salas.ToListAsync();
+            try
+            {
+                var data = await _context.Salas.ToListAsync();
+                return ApiResult<List<Sala>>.Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<List<Sala>>.Fail(ex.Message);
+            }
         }
 
         // GET: api/Salas/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Sala>> GetSala(int id)
+        public async Task<ActionResult<ApiResult<Sala>>> GetSala(int id)
         {
-            var sala = await _context.Salas.FindAsync(id);
-
-            if (sala == null)
+            try
             {
-                return NotFound();
+                var sala = await _context.Salas.FindAsync(id);
+                if (sala == null)
+                {
+                    return ApiResult<Sala>.Fail("Datos no encontrados");
+                }
+                return ApiResult<Sala>.Ok(sala);
             }
-
-            return sala;
+            catch (Exception ex)
+            {
+                return ApiResult<Sala>.Fail(ex.Message);
+            }
         }
 
         // PUT: api/Salas/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutSala(int id, Sala sala)
+        public async Task<ActionResult<ApiResult<Sala>>> PutSala(int id, Sala sala)
         {
             if (id != sala.Id)
             {
-                return BadRequest();
+                return ApiResult<Sala>.Fail("No coinciden los identificadores");
             }
 
             _context.Entry(sala).State = EntityState.Modified;
@@ -58,46 +71,57 @@ namespace Cine.Api.Controllers
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException ex)
             {
                 if (!SalaExists(id))
                 {
-                    return NotFound();
+                    return ApiResult<Sala>.Fail("Datos no encontrados");
                 }
                 else
                 {
-                    throw;
+                    return ApiResult<Sala>.Fail(ex.Message);
                 }
             }
 
-            return NoContent();
+            return ApiResult<Sala>.Ok(null);
         }
 
         // POST: api/Salas
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Sala>> PostSala(Sala sala)
+        public async Task<ActionResult<ApiResult<Sala>>> PostSala(Sala sala)
         {
-            _context.Salas.Add(sala);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetSala", new { id = sala.Id }, sala);
+            try
+            {
+                _context.Salas.Add(sala);
+                await _context.SaveChangesAsync();
+                return ApiResult<Sala>.Ok(sala);
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<Sala>.Fail(ex.Message);
+            }
         }
 
         // DELETE: api/Salas/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteSala(int id)
+        public async Task<ActionResult<ApiResult<Sala>>> DeleteSala(int id)
         {
-            var sala = await _context.Salas.FindAsync(id);
-            if (sala == null)
+            try
             {
-                return NotFound();
+                var sala = await _context.Salas.FindAsync(id);
+                if (sala == null)
+                {
+                    return ApiResult<Sala>.Fail("Datos no encontrados");
+                }
+                _context.Salas.Remove(sala);
+                await _context.SaveChangesAsync();
+                return ApiResult<Sala>.Ok(null);
             }
-
-            _context.Salas.Remove(sala);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                return ApiResult<Sala>.Fail(ex.Message);
+            }
         }
 
         private bool SalaExists(int id)

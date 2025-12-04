@@ -8,7 +8,7 @@ namespace Cine.ApiTest
         static void Main(string[] args)
         {
             var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri("https://cine-g99w.onrender.com/api/");
+            httpClient.BaseAddress = new Uri("https://cine-g99w.onrender.com");
 
             // Orden correcto: Salas, Peliculas, Funciones, Boletos
             new SalasApiTest(httpClient).RunAllTests();
