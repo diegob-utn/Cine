@@ -23,33 +23,46 @@ namespace Cine.Api.Controllers
 
         // GET: api/Funciones
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Funcion>>> GetFuncion()
+        public async Task<ActionResult<ApiResult<List<Funcion>>>> GetFuncion()
         {
-            return await _context.Funciones.ToListAsync();
+            try
+            {
+                var data = await _context.Funciones.ToListAsync();
+                return ApiResult<List<Funcion>>.Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<List<Funcion>>.Fail(ex.Message);
+            }
         }
 
         // GET: api/Funciones/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Funcion>> GetFuncion(int id)
+        public async Task<ActionResult<ApiResult<Funcion>>> GetFuncion(int id)
         {
-            var funcion = await _context.Funciones.FindAsync(id);
-
-            if (funcion == null)
+            try
             {
-                return NotFound();
+                var funcion = await _context.Funciones.FindAsync(id);
+                if (funcion == null)
+                {
+                    return ApiResult<Funcion>.Fail("Datos no encontrados");
+                }
+                return ApiResult<Funcion>.Ok(funcion);
             }
-
-            return funcion;
+            catch (Exception ex)
+            {
+                return ApiResult<Funcion>.Fail(ex.Message);
+            }
         }
 
         // PUT: api/Funciones/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutFuncion(int id, Funcion funcion)
+        public async Task<ActionResult<ApiResult<Funcion>>> PutFuncion(int id, Funcion funcion)
         {
             if (id != funcion.Id)
             {
-                return BadRequest();
+                return ApiResult<Funcion>.Fail("No coinciden los identificadores");
             }
 
             _context.Entry(funcion).State = EntityState.Modified;
@@ -58,46 +71,57 @@ namespace Cine.Api.Controllers
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException ex)
             {
                 if (!FuncionExists(id))
                 {
-                    return NotFound();
+                    return ApiResult<Funcion>.Fail("Datos no encontrados");
                 }
                 else
                 {
-                    throw;
+                    return ApiResult<Funcion>.Fail(ex.Message);
                 }
             }
 
-            return NoContent();
+            return ApiResult<Funcion>.Ok(null);
         }
 
         // POST: api/Funciones
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Funcion>> PostFuncion(Funcion funcion)
+        public async Task<ActionResult<ApiResult<Funcion>>> PostFuncion(Funcion funcion)
         {
-            _context.Funciones.Add(funcion);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetFuncion", new { id = funcion.Id }, funcion);
+            try
+            {
+                _context.Funciones.Add(funcion);
+                await _context.SaveChangesAsync();
+                return ApiResult<Funcion>.Ok(funcion);
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<Funcion>.Fail(ex.Message);
+            }
         }
 
         // DELETE: api/Funciones/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteFuncion(int id)
+        public async Task<ActionResult<ApiResult<Funcion>>> DeleteFuncion(int id)
         {
-            var funcion = await _context.Funciones.FindAsync(id);
-            if (funcion == null)
+            try
             {
-                return NotFound();
+                var funcion = await _context.Funciones.FindAsync(id);
+                if (funcion == null)
+                {
+                    return ApiResult<Funcion>.Fail("Datos no encontrados");
+                }
+                _context.Funciones.Remove(funcion);
+                await _context.SaveChangesAsync();
+                return ApiResult<Funcion>.Ok(null);
             }
-
-            _context.Funciones.Remove(funcion);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                return ApiResult<Funcion>.Fail(ex.Message);
+            }
         }
 
         private bool FuncionExists(int id)

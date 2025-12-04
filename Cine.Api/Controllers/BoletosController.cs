@@ -23,33 +23,75 @@ namespace Cine.Api.Controllers
 
         // GET: api/Boletos
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Boleto>>> GetBoleto()
+        public async Task<ActionResult<ApiResult<List<Boleto>>>> GetBoletos()
         {
-            return await _context.Boletos.ToListAsync();
+            try
+            {
+                var data = await _context.Boletos.ToListAsync();
+                return ApiResult<List<Boleto>>.Ok(data);
+            }
+            catch(Exception ex)
+            {
+                return ApiResult<List<Boleto>>.Fail(ex.Message);
+            }
         }
 
         // GET: api/Boletos/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Boleto>> GetBoleto(int id)
+        public async Task<ActionResult<ApiResult<Boleto>>> GetBoleto(int id)
         {
-            var boleto = await _context.Boletos.FindAsync(id);
-
-            if(boleto == null)
+            try
             {
-                return NotFound();
-            }
+                var boleto = await _context
+                    .Boletos
+                    .Include(b => b.Funcion)
+                    .ThenInclude(f => f.Sala)
+                    .FirstOrDefaultAsync(b => b.Id == id);
 
-            return boleto;
+                if(boleto == null)
+                {
+                    return ApiResult<Boleto>.Fail("Datos no encontrados");
+                }
+
+                return ApiResult<Boleto>.Ok(boleto);
+            }
+            catch(Exception ex)
+            {
+                return ApiResult<Boleto>.Fail(ex.Message);
+            }
         }
+
+
+        // GET: api/Boletos/5
+        [HttpGet("Disponibilidad/{funcioId}")]
+        public async Task<ActionResult<ApiResult<List<int>>>> GetBoletosDisponibles(int funcioId)
+        {
+            try
+            {
+                var asientosOcupados = await _context
+                    .Boletos
+                    .Where(b => b.FuncionId == funcioId && !b.Cancelado)
+                    .Select(b => b.Asiento)
+                    .ToListAsync();
+
+                return ApiResult<List<int>>.Ok(asientosOcupados);
+            }
+            catch(Exception e)
+            {
+                return ApiResult<List<int>>.Fail(e.Message);
+            }
+        }
+
+
 
         // PUT: api/Boletos/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutBoleto(int id, Boleto boleto)
+        public async Task<ActionResult<ApiResult<Boleto>>> PutBoleto(int id, Boleto boleto)
         {
             if(id != boleto.Id)
             {
-                return BadRequest();
+                return ApiResult<Boleto>.Fail("No coinciden los identificadores");
             }
 
             _context.Entry(boleto).State = EntityState.Modified;
@@ -58,46 +100,60 @@ namespace Cine.Api.Controllers
             {
                 await _context.SaveChangesAsync();
             }
-            catch(DbUpdateConcurrencyException)
+            catch(DbUpdateConcurrencyException ex)
             {
                 if(!BoletoExists(id))
                 {
-                    return NotFound();
+                    return ApiResult<Boleto>.Fail("Datos no encontrados");
                 }
                 else
                 {
-                    throw;
+                    return ApiResult<Boleto>.Fail(ex.Message);
                 }
             }
 
-            return NoContent();
+            return ApiResult<Boleto>.Ok(null);
         }
 
         // POST: api/Boletos
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Boleto>> PostBoleto(Boleto boleto)
+        public async Task<ActionResult<ApiResult<Boleto>>> PostBoleto(Boleto boleto)
         {
-            _context.Boletos.Add(boleto);
-            await _context.SaveChangesAsync();
+            try
+            {
+                _context.Boletos.Add(boleto);
+                await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetBoleto", new { id = boleto.Id }, boleto);
+                return ApiResult<Boleto>.Ok(boleto);
+            }
+            catch(Exception ex)
+            {
+                return ApiResult<Boleto>.Fail(ex.Message);
+            }
         }
 
         // DELETE: api/Boletos/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteBoleto(int id)
+        public async Task<ActionResult<ApiResult<Boleto>>> DeleteBoleto(int id)
         {
-            var boleto = await _context.Boletos.FindAsync(id);
-            if(boleto == null)
+            try
             {
-                return NotFound();
+                var boleto = await _context.Boletos.FindAsync(id);
+                if(boleto == null)
+                {
+                    return ApiResult<Boleto>.Fail("Datos no encontrados");
+                }
+
+                _context.Boletos.Remove(boleto);
+                await _context.SaveChangesAsync();
+
+                return ApiResult<Boleto>.Ok(null);
             }
-
-            _context.Boletos.Remove(boleto);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            catch(Exception ex)
+            {
+                return ApiResult<Boleto>.Fail(ex.Message);
+            }
         }
 
         private bool BoletoExists(int id)

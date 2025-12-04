@@ -23,33 +23,46 @@ namespace Cine.Api.Controllers
 
         // GET: api/Peliculas
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Pelicula>>> GetPelicula()
+        public async Task<ActionResult<ApiResult<List<Pelicula>>>> GetPelicula()
         {
-            return await _context.Peliculas.ToListAsync();
+            try
+            {
+                var data = await _context.Peliculas.ToListAsync();
+                return ApiResult<List<Pelicula>>.Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<List<Pelicula>>.Fail(ex.Message);
+            }
         }
 
         // GET: api/Peliculas/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Pelicula>> GetPelicula(int id)
+        public async Task<ActionResult<ApiResult<Pelicula>>> GetPelicula(int id)
         {
-            var pelicula = await _context.Peliculas.FindAsync(id);
-
-            if (pelicula == null)
+            try
             {
-                return NotFound();
+                var pelicula = await _context.Peliculas.FindAsync(id);
+                if (pelicula == null)
+                {
+                    return ApiResult<Pelicula>.Fail("Datos no encontrados");
+                }
+                return ApiResult<Pelicula>.Ok(pelicula);
             }
-
-            return pelicula;
+            catch (Exception ex)
+            {
+                return ApiResult<Pelicula>.Fail(ex.Message);
+            }
         }
 
         // PUT: api/Peliculas/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutPelicula(int id, Pelicula pelicula)
+        public async Task<ActionResult<ApiResult<Pelicula>>> PutPelicula(int id, Pelicula pelicula)
         {
             if (id != pelicula.Id)
             {
-                return BadRequest();
+                return ApiResult<Pelicula>.Fail("No coinciden los identificadores");
             }
 
             _context.Entry(pelicula).State = EntityState.Modified;
@@ -58,46 +71,57 @@ namespace Cine.Api.Controllers
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException ex)
             {
                 if (!PeliculaExists(id))
                 {
-                    return NotFound();
+                    return ApiResult<Pelicula>.Fail("Datos no encontrados");
                 }
                 else
                 {
-                    throw;
+                    return ApiResult<Pelicula>.Fail(ex.Message);
                 }
             }
 
-            return NoContent();
+            return ApiResult<Pelicula>.Ok(null);
         }
 
         // POST: api/Peliculas
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Pelicula>> PostPelicula(Pelicula pelicula)
+        public async Task<ActionResult<ApiResult<Pelicula>>> PostPelicula(Pelicula pelicula)
         {
-            _context.Peliculas.Add(pelicula);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetPelicula", new { id = pelicula.Id }, pelicula);
+            try
+            {
+                _context.Peliculas.Add(pelicula);
+                await _context.SaveChangesAsync();
+                return ApiResult<Pelicula>.Ok(pelicula);
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<Pelicula>.Fail(ex.Message);
+            }
         }
 
         // DELETE: api/Peliculas/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePelicula(int id)
+        public async Task<ActionResult<ApiResult<Pelicula>>> DeletePelicula(int id)
         {
-            var pelicula = await _context.Peliculas.FindAsync(id);
-            if (pelicula == null)
+            try
             {
-                return NotFound();
+                var pelicula = await _context.Peliculas.FindAsync(id);
+                if (pelicula == null)
+                {
+                    return ApiResult<Pelicula>.Fail("Datos no encontrados");
+                }
+                _context.Peliculas.Remove(pelicula);
+                await _context.SaveChangesAsync();
+                return ApiResult<Pelicula>.Ok(null);
             }
-
-            _context.Peliculas.Remove(pelicula);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                return ApiResult<Pelicula>.Fail(ex.Message);
+            }
         }
 
         private bool PeliculaExists(int id)

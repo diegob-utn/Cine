@@ -14,6 +14,8 @@ namespace Cine.Modelos
         public string Cliente { get; set; } = string.Empty;
         public int Asiento { get; set; }
 
+        public bool Cancelado { get; set; } = false;
+
         // Clave foránea
         public int FuncionId { get; set; }
         public Funcion? Funcion { get; set; }
