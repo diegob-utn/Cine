@@ -31,6 +31,12 @@ namespace Cine.ApiTest
             json = response.Content.ReadAsStringAsync().Result;
             var salaCreada = JsonConvert.DeserializeObject<Modelos.ApiResult<Modelos.Sala>>(json);
 
+            if(salaCreada == null || !salaCreada.Success || salaCreada.Data == null)
+            {
+                Console.WriteLine($"Error al crear sala: {salaCreada?.Message ?? json}");
+                return;
+            }
+
             // UPDATE
             salaCreada.Data.Nombre = "Sala Test Actualizada";
             salaJson = JsonConvert.SerializeObject(salaCreada.Data);
