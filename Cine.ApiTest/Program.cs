@@ -13,6 +13,7 @@ namespace Cine.ApiTest
             new PeliculasApiTest(httpClient).RunAllTests();
             new FuncionesApiTest(httpClient).RunAllTests();
             new BoletosApiTest(httpClient).RunAllTests();
+            new SalasApiTest(httpClient).RunAllTests();
 
             Console.WriteLine("Pruebas finalizadas.");
             Console.ReadLine();
