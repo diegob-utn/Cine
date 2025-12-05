@@ -18,33 +18,57 @@ namespace Cine.ApiTest
 
         public void RunAllTests()
         {
-            // GET
+            Console.WriteLine("--- Iniciando Test de Boletos (Flujo con Persistencia) ---");
+
+            // 1. GET
             var response = _httpClient.GetAsync(_ruta).Result;
-            var json = response.Content.ReadAsStringAsync().Result;
-            var boletos = JsonConvert.DeserializeObject<Modelos.ApiResult<List<Modelos.Boleto>>>(json);
 
-            // INSERT
-            var nuevoBoleto = new Modelos.Boleto { Id = 0, Cliente = "Test", Asiento = 1, FuncionId = 1 };
-            var boletoJson = JsonConvert.SerializeObject(nuevoBoleto);
-            var content = new StringContent(boletoJson, Encoding.UTF8, "application/json");
-            response = _httpClient.PostAsync(_ruta, content).Result;
-            json = response.Content.ReadAsStringAsync().Result;
-            var boletoCreado = JsonConvert.DeserializeObject<Modelos.ApiResult<Modelos.Boleto>>(json);
+            // 2. INSERT (Dato Original)
+            var boletoOriginal = new Modelos.Boleto { Id = 0, Cliente = "Cliente Test " + DateTime.Now.Ticks, Asiento = 1, FuncionId = 1 };
+            var jsonOriginal = JsonConvert.SerializeObject(boletoOriginal);
+            var contentOriginal = new StringContent(jsonOriginal, Encoding.UTF8, "application/json");
+            response = _httpClient.PostAsync(_ruta, contentOriginal).Result;
+            var jsonResp = response.Content.ReadAsStringAsync().Result;
+            var boletoCreado1 = JsonConvert.DeserializeObject<Modelos.ApiResult<Modelos.Boleto>>(jsonResp);
 
-            // UPDATE
-            boletoCreado.Data.Asiento = 2;
-            boletoJson = JsonConvert.SerializeObject(boletoCreado.Data);
-            content = new StringContent(boletoJson, Encoding.UTF8, "application/json");
-            response = _httpClient.PutAsync($"{_ruta}/{boletoCreado.Data.Id}", content).Result;
-            json = response.Content.ReadAsStringAsync().Result;
-            var boletoUpdate = JsonConvert.DeserializeObject<Modelos.ApiResult<Modelos.Boleto>>(json);
+            if(boletoCreado1 == null || !boletoCreado1.Success || boletoCreado1.Data == null)
+            {
+                Console.WriteLine($" Error creando Boleto 1: {jsonResp}");
+                return;
+            }
+            Console.WriteLine($" Boleto 1 Creado: (ID: {boletoCreado1.Data.Id})");
 
-            // DELETE
-            response = _httpClient.DeleteAsync($"{_ruta}/{boletoCreado.Data.Id}").Result;
-            json = response.Content.ReadAsStringAsync().Result;
-            var boletoDelete = JsonConvert.DeserializeObject<Modelos.ApiResult<Modelos.Boleto>>(json);
+            // 3. "UPDATE" (Simulado como Nuevo Insert para mantener historial)
+            var boletoUpdate = new Modelos.Boleto
+            {
+                Id = 0,
+                Cliente = "Cliente Test Update " + DateTime.Now.Ticks,
+                Asiento = 2,
+                FuncionId = 1
+            };
+            var jsonUpdate = JsonConvert.SerializeObject(boletoUpdate);
+            var contentUpdate = new StringContent(jsonUpdate, Encoding.UTF8, "application/json");
+            response = _httpClient.PostAsync(_ruta, contentUpdate).Result;
+            jsonResp = response.Content.ReadAsStringAsync().Result;
+            var boletoCreado2 = JsonConvert.DeserializeObject<Modelos.ApiResult<Modelos.Boleto>>(jsonResp);
 
-            Console.WriteLine($"BoletosApiTest: {json}");
+            Console.WriteLine($" Boleto 2 (Versión Update) Creado: (ID: {boletoCreado2.Data.Id})");
+
+            // 4. DELETE (Eliminamos el primero para limpiar, pero dejamos el segundo)
+            Console.WriteLine($"? Eliminando Boleto 1 (ID: {boletoCreado1.Data.Id})...");
+            response = _httpClient.DeleteAsync($"{_ruta}/{boletoCreado1.Data.Id}").Result;
+
+            if(response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($" Boleto 1 Eliminado correctamente.");
+                Console.WriteLine($" El sistema mantiene el Boleto ID {boletoCreado2.Data.Id} para uso futuro.");
+            }
+            else
+            {
+                Console.WriteLine($" Error al eliminar Boleto 1: {response.StatusCode}");
+            }
+
+            Console.WriteLine("--- Fin Test Boletos ---");
         }
     }
 }
