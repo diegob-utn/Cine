@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Cine.Api.Migrations
 {
     [DbContext(typeof(DbContext))]
-    [Migration("20251205005244_v3-postgres")]
-    partial class v3postgres
+    [Migration("20251205015822_v1-postgres")]
+    partial class v1postgres
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

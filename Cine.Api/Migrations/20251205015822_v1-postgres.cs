@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Cine.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class v3postgres : Migration
+    public partial class v1postgres : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
