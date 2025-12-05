@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Cine.Api.Migrations
 {
     [DbContext(typeof(DbContext))]
-    [Migration("20251204152401_v2-postgresRender")]
-    partial class v2postgresRender
+    [Migration("20251205005244_v3-postgres")]
+    partial class v3postgres
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -35,6 +35,9 @@ namespace Cine.Api.Migrations
 
                     b.Property<int>("Asiento")
                         .HasColumnType("integer");
+
+                    b.Property<bool>("Cancelado")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Cliente")
                         .IsRequired()

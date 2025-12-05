@@ -33,6 +33,9 @@ namespace Cine.Api.Migrations
                     b.Property<int>("Asiento")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("Cancelado")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Cliente")
                         .IsRequired()
                         .HasColumnType("text");

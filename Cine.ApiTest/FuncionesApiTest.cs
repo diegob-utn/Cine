@@ -1,8 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace Cine.ApiTest
 {
@@ -20,55 +20,93 @@ namespace Cine.ApiTest
         {
             Console.WriteLine("--- Iniciando Test de Funciones (Flujo con Persistencia) ---");
 
-            // 1. GET
-            var response = _httpClient.GetAsync(_ruta).Result;
+            // BUSCAR DEPENDENCIAS
+            int idSala = GetFirstId("api/Salas");
+            int idPelicula = GetFirstId("api/Peliculas");
 
-            // 2. INSERT (Dato Original)
-            var funcionOriginal = new Modelos.Funcion { Id = 0, FechaHora = DateTime.Now, PeliculaId = 1, SalaId = 1 };
-            var jsonOriginal = JsonConvert.SerializeObject(funcionOriginal);
-            var contentOriginal = new StringContent(jsonOriginal, Encoding.UTF8, "application/json");
-            response = _httpClient.PostAsync(_ruta, contentOriginal).Result;
-            var jsonResp = response.Content.ReadAsStringAsync().Result;
-            var funcionCreada1 = JsonConvert.DeserializeObject<Modelos.ApiResult<Modelos.Funcion>>(jsonResp);
-
-            if(funcionCreada1 == null || !funcionCreada1.Success || funcionCreada1.Data == null)
+            if(idSala == 0 || idPelicula == 0)
             {
-                Console.WriteLine($" Error creando Funcion 1: {jsonResp}");
+                Console.WriteLine("SKIPPED: No hay Salas o Películas disponibles. Ejecuta los tests de Salas y Peliculas primero.");
                 return;
             }
-            Console.WriteLine($" Funcion 1 Creada: (ID: {funcionCreada1.Data.Id})");
 
-            // 3. "UPDATE" (Simulado como Nuevo Insert para mantener historial)
-            var funcionUpdate = new Modelos.Funcion
+            // 1. INSERT (Temporal)
+            // IMPORTANTE: Usamos DateTime.UtcNow para evitar errores de zona horaria en PostgreSQL
+            var funcTemp = new Modelos.Funcion
             {
                 Id = 0,
-                FechaHora = DateTime.Now.AddDays(1),
-                PeliculaId = 1,
-                SalaId = 1
+                FechaHora = DateTime.UtcNow.AddHours(2),
+                SalaId = idSala,
+                PeliculaId = idPelicula
             };
-            var jsonUpdate = JsonConvert.SerializeObject(funcionUpdate);
+
+            var funcTempCreada = CreateFuncion(funcTemp);
+            if(funcTempCreada == null) return;
+            Console.WriteLine($"Función Temporal Creada: ID {funcTempCreada.Id}");
+
+            // 2. INSERT (Persistente)
+            var funcPerm = new Modelos.Funcion
+            {
+                Id = 0,
+                FechaHora = DateTime.UtcNow.AddDays(1),
+                SalaId = idSala,
+                PeliculaId = idPelicula
+            };
+
+            var funcPermCreada = CreateFuncion(funcPerm);
+            if(funcPermCreada == null) return;
+            Console.WriteLine($"Función Persistente Creada: ID {funcPermCreada.Id}");
+
+            // 3. UPDATE
+            funcPermCreada.FechaHora = funcPermCreada.FechaHora.AddHours(2);
+            var jsonUpdate = JsonConvert.SerializeObject(funcPermCreada);
             var contentUpdate = new StringContent(jsonUpdate, Encoding.UTF8, "application/json");
-            response = _httpClient.PostAsync(_ruta, contentUpdate).Result;
-            jsonResp = response.Content.ReadAsStringAsync().Result;
-            var funcionCreada2 = JsonConvert.DeserializeObject<Modelos.ApiResult<Modelos.Funcion>>(jsonResp);
 
-            Console.WriteLine($" Funcion 2 (Versión Update) Creada: (ID: {funcionCreada2.Data.Id})");
-
-            // 4. DELETE (Eliminamos la primera para limpiar, pero dejamos la segunda)
-            Console.WriteLine($"? Eliminando Funcion 1 (ID: {funcionCreada1.Data.Id})...");
-            response = _httpClient.DeleteAsync($"{_ruta}/{funcionCreada1.Data.Id}").Result;
-
+            var response = _httpClient.PutAsync($"{_ruta}/{funcPermCreada.Id}", contentUpdate).Result;
             if(response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($" Funcion 1 Eliminada correctamente.");
-                Console.WriteLine($" El sistema mantiene la Funcion ID {funcionCreada2.Data.Id} para uso futuro.");
-            }
+                Console.WriteLine($"Función Persistente Actualizada.");
             else
-            {
-                Console.WriteLine($" Error al eliminar Funcion 1: {response.StatusCode}");
-            }
+                Console.WriteLine($"Error Update Funcion: {response.StatusCode}");
+
+            // 4. DELETE
+            Console.WriteLine($"Eliminando Función Temporal (ID: {funcTempCreada.Id})...");
+            _httpClient.DeleteAsync($"{_ruta}/{funcTempCreada.Id}").Wait();
+            Console.WriteLine($"Función Temporal eliminada. La Función ID {funcPermCreada.Id} queda disponible.");
 
             Console.WriteLine("--- Fin Test Funciones ---");
+        }
+
+        private Modelos.Funcion? CreateFuncion(Modelos.Funcion funcion)
+        {
+            var json = JsonConvert.SerializeObject(funcion);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = _httpClient.PostAsync(_ruta, content).Result;
+            var respJson = response.Content.ReadAsStringAsync().Result;
+
+            if(!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"Error creando Función: {respJson}");
+                return null;
+            }
+
+            var result = JsonConvert.DeserializeObject<Modelos.ApiResult<Modelos.Funcion>>(respJson);
+            return result?.Success == true ? result.Data : null;
+        }
+
+        private int GetFirstId(string endpoint)
+        {
+            try
+            {
+                var json = _httpClient.GetStringAsync(endpoint).Result;
+                // Deserializamos a una estructura genérica para extraer el ID
+                var definition = new { data = new List<dynamic>() };
+                dynamic result = JsonConvert.DeserializeObject(json);
+
+                if(result?.data != null && result.data.Count > 0)
+                    return (int)result.data[0].id;
+            }
+            catch { }
+            return 0;
         }
     }
 }

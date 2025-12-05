@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Cine.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class v2postgresRender : Migration
+    public partial class v3postgres : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -79,6 +79,7 @@ namespace Cine.Api.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Cliente = table.Column<string>(type: "text", nullable: false),
                     Asiento = table.Column<int>(type: "integer", nullable: false),
+                    Cancelado = table.Column<bool>(type: "boolean", nullable: false),
                     FuncionId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
